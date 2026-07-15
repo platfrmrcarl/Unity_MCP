@@ -11,3 +11,6 @@
 *.sln
 *.user
 .DS_Store
+
+# SDD progress ledger (local scratch)
+.superpowers/
