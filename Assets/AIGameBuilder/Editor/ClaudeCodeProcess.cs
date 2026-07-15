@@ -17,6 +17,7 @@ namespace AIGameBuilder
 
         public void Send(string prompt)
         {
+            if (IsRunning) Cancel();
             var mcpConfig = System.IO.Path.Combine(_repoRoot, ".mcp.json");
             var psi = new ProcessStartInfo
             {
