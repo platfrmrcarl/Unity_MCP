@@ -13,6 +13,7 @@ namespace AIGameBuilder
         private BuilderStatus _status = BuilderStatus.Idle;
         private string _initMessage = "";
         private ClaudeCodeProcess _proc;
+        private readonly List<string> _recentErrors = new List<string>();
 
         [MenuItem("Window/AI Game Builder")]
         public static void Open()
@@ -26,12 +27,23 @@ namespace AIGameBuilder
         {
             _proc = new ClaudeCodeProcess("/home/carl/GitHub/Unity_MCP");
             EditorApplication.update += Pump;
+            Application.logMessageReceived += OnLog;
         }
 
         private void OnDisable()
         {
             EditorApplication.update -= Pump;
+            Application.logMessageReceived -= OnLog;
             _proc?.Cancel();
+        }
+
+        private void OnLog(string condition, string stackTrace, LogType type)
+        {
+            if (type == LogType.Error || type == LogType.Exception)
+            {
+                _recentErrors.Add(condition);
+                while (_recentErrors.Count > 5) _recentErrors.RemoveAt(0);
+            }
         }
 
         private void OnGUI()
@@ -86,7 +98,8 @@ namespace AIGameBuilder
         {
             _transcript.Add("You: " + prompt);
             _status = BuilderStatus.Thinking;
-            _proc.Send(prompt);
+            var full = ContextHeader.Build(_recentErrors) + "\n" + prompt;
+            _proc.Send(full);
         }
 
         private void Pump()
