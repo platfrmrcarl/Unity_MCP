@@ -12,6 +12,7 @@ namespace AIGameBuilder
         private Vector2 _scroll;
         private BuilderStatus _status = BuilderStatus.Idle;
         private string _initMessage = "";
+        private ClaudeCodeProcess _proc;
 
         [MenuItem("Window/AI Game Builder")]
         public static void Open()
@@ -19,6 +20,18 @@ namespace AIGameBuilder
             var window = GetWindow<AIGameBuilderWindow>();
             window.titleContent = new GUIContent("AI Game Builder");
             window.minSize = new Vector2(360, 300);
+        }
+
+        private void OnEnable()
+        {
+            _proc = new ClaudeCodeProcess("/home/carl/GitHub/Unity_MCP");
+            EditorApplication.update += Pump;
+        }
+
+        private void OnDisable()
+        {
+            EditorApplication.update -= Pump;
+            _proc?.Cancel();
         }
 
         private void OnGUI()
@@ -69,11 +82,36 @@ namespace AIGameBuilder
             }
         }
 
-        // Overridden in Phase 2 to drive the subprocess. Echo for now.
         protected virtual void Send(string prompt)
         {
             _transcript.Add("You: " + prompt);
-            _transcript.Add("(echo) " + prompt);
+            _status = BuilderStatus.Thinking;
+            _proc.Send(prompt);
+        }
+
+        private void Pump()
+        {
+            if (_proc == null) return;
+            var events = _proc.DrainEvents();
+            bool changed = events.Count > 0;
+            while (events.Count > 0)
+            {
+                var e = events.Dequeue();
+                switch (e.Kind)
+                {
+                    case StreamEventKind.AssistantText:
+                        if (!string.IsNullOrEmpty(e.Text)) _transcript.Add("AI: " + e.Text);
+                        break;
+                    case StreamEventKind.ToolUse:
+                        _status = StatusMapper.ForTool(e.ToolName);
+                        _transcript.Add("  · " + e.ToolName);
+                        break;
+                    case StreamEventKind.Result:
+                        _status = BuilderStatus.Idle;
+                        break;
+                }
+            }
+            if (changed) Repaint();
         }
 
         private void Initialize()
