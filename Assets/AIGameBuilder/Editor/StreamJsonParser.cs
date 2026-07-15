@@ -1,57 +1,66 @@
+using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 namespace AIGameBuilder
 {
     public static class StreamJsonParser
     {
-        public static StreamEvent ParseLine(string jsonLine)
+        public static List<StreamEvent> ParseLine(string jsonLine)
         {
-            if (string.IsNullOrWhiteSpace(jsonLine)) return StreamEvent.Unknown;
+            if (string.IsNullOrWhiteSpace(jsonLine)) return SingleUnknown();
 
             JObject root;
             try { root = JObject.Parse(jsonLine); }
-            catch { return StreamEvent.Unknown; }
+            catch { return SingleUnknown(); }
 
             var type = (string)root["type"];
             switch (type)
             {
                 case "system":
-                    return new StreamEvent { Kind = StreamEventKind.Init };
+                    return new List<StreamEvent> { new StreamEvent { Kind = StreamEventKind.Init } };
                 case "result":
-                    return new StreamEvent { Kind = StreamEventKind.Result };
+                    return new List<StreamEvent> { new StreamEvent { Kind = StreamEventKind.Result } };
                 case "assistant":
                     return ParseAssistant(root);
                 default:
-                    return StreamEvent.Unknown;
+                    return SingleUnknown();
             }
         }
 
-        private static StreamEvent ParseAssistant(JObject root)
+        private static List<StreamEvent> ParseAssistant(JObject root)
         {
             var content = root["message"]?["content"] as JArray;
-            if (content == null) return StreamEvent.Unknown;
+            if (content == null) return SingleUnknown();
 
+            var events = new List<StreamEvent>();
             foreach (var block in content)
             {
                 var blockType = (string)block["type"];
-                if (blockType == "tool_use")
-                {
-                    return new StreamEvent
-                    {
-                        Kind = StreamEventKind.ToolUse,
-                        ToolName = (string)block["name"]
-                    };
-                }
                 if (blockType == "text")
                 {
-                    return new StreamEvent
+                    events.Add(new StreamEvent
                     {
                         Kind = StreamEventKind.AssistantText,
                         Text = (string)block["text"]
-                    };
+                    });
+                }
+                else if (blockType == "tool_use")
+                {
+                    events.Add(new StreamEvent
+                    {
+                        Kind = StreamEventKind.ToolUse,
+                        ToolName = (string)block["name"]
+                    });
                 }
             }
-            return StreamEvent.Unknown;
+
+            if (events.Count == 0) return SingleUnknown();
+            return events;
+        }
+
+        private static List<StreamEvent> SingleUnknown()
+        {
+            return new List<StreamEvent> { StreamEvent.Unknown };
         }
     }
 }

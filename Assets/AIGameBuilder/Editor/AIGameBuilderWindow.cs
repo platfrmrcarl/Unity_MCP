@@ -14,6 +14,7 @@ namespace AIGameBuilder
         private string _initMessage = "";
         private ClaudeCodeProcess _proc;
         private readonly List<string> _recentErrors = new List<string>();
+        private readonly object _errorsLock = new object();
         private bool _conversationStarted;
 
         [MenuItem("Window/AI Game Builder")]
@@ -42,8 +43,11 @@ namespace AIGameBuilder
         {
             if (type == LogType.Error || type == LogType.Exception)
             {
-                _recentErrors.Add(condition);
-                while (_recentErrors.Count > 5) _recentErrors.RemoveAt(0);
+                lock (_errorsLock)
+                {
+                    _recentErrors.Add(condition);
+                    while (_recentErrors.Count > 5) _recentErrors.RemoveAt(0);
+                }
             }
         }
 
@@ -107,7 +111,9 @@ namespace AIGameBuilder
         {
             _transcript.Add("You: " + prompt);
             _status = BuilderStatus.Thinking;
-            var full = ContextHeader.Build(_recentErrors) + "\n" + prompt;
+            List<string> errorsSnapshot;
+            lock (_errorsLock) { errorsSnapshot = new List<string>(_recentErrors); }
+            var full = ContextHeader.Build(errorsSnapshot) + "\n" + prompt;
             _proc.Send(full, _conversationStarted);
             _conversationStarted = true;
         }

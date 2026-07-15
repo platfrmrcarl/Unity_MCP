@@ -44,8 +44,8 @@ namespace AIGameBuilder
             _process.OutputDataReceived += (s, e) =>
             {
                 if (e.Data == null) return;
-                var parsed = StreamJsonParser.ParseLine(e.Data);
-                lock (_lock) { _events.Enqueue(parsed); }
+                var parsedList = StreamJsonParser.ParseLine(e.Data);
+                lock (_lock) { foreach (var ev in parsedList) _events.Enqueue(ev); }
             };
             _process.Start();
             _process.BeginOutputReadLine();
