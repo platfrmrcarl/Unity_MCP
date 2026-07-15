@@ -1,0 +1,7 @@
+{
+  "name": "AIGameBuilder.Editor",
+  "references": ["Unity.Nuget.Newtonsoft-Json"],
+  "includePlatforms": ["Editor"],
+  "overrideReferences": false,
+  "autoReferenced": true
+}
