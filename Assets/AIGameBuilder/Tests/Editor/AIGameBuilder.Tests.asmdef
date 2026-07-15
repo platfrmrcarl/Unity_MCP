@@ -1,6 +1,6 @@
 {
   "name": "AIGameBuilder.Tests",
-  "references": ["AIGameBuilder.Editor", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+  "references": ["AIGameBuilder.Editor"],
   "includePlatforms": ["Editor"],
   "optionalUnityReferences": ["TestAssemblies"],
   "autoReferenced": false
