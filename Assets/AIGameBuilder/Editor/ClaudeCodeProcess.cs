@@ -15,7 +15,7 @@ namespace AIGameBuilder
 
         public bool IsRunning { get { return _process != null && !_process.HasExited; } }
 
-        public void Send(string prompt)
+        public void Send(string prompt, bool continueConversation)
         {
             if (IsRunning) Cancel();
             var mcpConfig = System.IO.Path.Combine(_repoRoot, ".mcp.json");
@@ -35,6 +35,10 @@ namespace AIGameBuilder
             psi.ArgumentList.Add("--mcp-config"); psi.ArgumentList.Add(mcpConfig);
             psi.ArgumentList.Add("--strict-mcp-config");
             psi.ArgumentList.Add("--permission-mode"); psi.ArgumentList.Add("bypassPermissions");
+            if (continueConversation)
+            {
+                psi.ArgumentList.Add("--continue");
+            }
 
             _process = new Process { StartInfo = psi, EnableRaisingEvents = true };
             _process.OutputDataReceived += (s, e) =>

@@ -14,6 +14,7 @@ namespace AIGameBuilder
         private string _initMessage = "";
         private ClaudeCodeProcess _proc;
         private readonly List<string> _recentErrors = new List<string>();
+        private bool _conversationStarted;
 
         [MenuItem("Window/AI Game Builder")]
         public static void Open()
@@ -61,6 +62,14 @@ namespace AIGameBuilder
                 {
                     Initialize();
                 }
+                using (new EditorGUI.DisabledScope(!_proc.IsRunning))
+                {
+                    if (GUILayout.Button("Cancel", EditorStyles.toolbarButton, GUILayout.Width(60)))
+                    {
+                        _proc.Cancel();
+                        _status = BuilderStatus.Idle;
+                    }
+                }
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(_status.Label(), EditorStyles.miniLabel);
             }
@@ -99,7 +108,8 @@ namespace AIGameBuilder
             _transcript.Add("You: " + prompt);
             _status = BuilderStatus.Thinking;
             var full = ContextHeader.Build(_recentErrors) + "\n" + prompt;
-            _proc.Send(full);
+            _proc.Send(full, _conversationStarted);
+            _conversationStarted = true;
         }
 
         private void Pump()
